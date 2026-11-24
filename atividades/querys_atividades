@@ -1,0 +1,268 @@
+-- 01. Calcule o faturamento total da Samsung,
+-- considerando a quantidade e o preço unitário dos produtos.
+
+SELECT
+    SUM(quantidade * preco_unitario) AS faturamento_total
+FROM itens_venda;
+
+-- 02. Descubra quantas vendas foram realizadas no banco.
+
+SELECT COUNT(*) AS total_vendas
+FROM vendas;
+
+-- 03. Calcule o ticket médio geral das vendas.
+
+SELECT
+    ROUND(SUM(iv.quantidade * iv.preco_unitario) / COUNT(v.id_venda), 2) AS ticket_medio
+FROM itens_venda AS iv
+FULL JOIN vendas AS v
+    ON iv.id_venda = v.id_venda;
+
+-- 04. Identifique o valor total de descontos concedidos
+-- pela empresa em todas as vendas.
+
+SELECT
+    SUM(iv.quantidade * iv.preco_unitario) AS faturamento_total,
+    ROUND(SUM(iv.quantidade * iv.preco_unitario * COALESCE(v.desconto_pct,0) / 100.0), 2) AS valor_desconto 
+FROM vendas AS v
+INNER JOIN itens_venda AS iv
+    ON v.id_venda = iv.id_venda;
+
+-- 05. Calcule a receita líquida total,
+-- descontando os descontos aplicados nas vendas.
+
+WITH valor_descontado AS (
+SELECT
+    SUM(iv.quantidade * iv.preco_unitario) AS faturamento_total,
+    ROUND(SUM(iv.quantidade * iv.preco_unitario * COALESCE(v.desconto_pct,0) / 100.0), 2) AS valor_desconto 
+FROM vendas AS v
+INNER JOIN itens_venda AS iv
+    ON v.id_venda = iv.id_venda
+)
+
+SELECT
+    faturamento_total, valor_desconto,
+    ROUND(faturamento_total - valor_desconto, 2) AS receita_liquida
+FROM valor_descontado;
+
+-- 06. Descubra qual foi a venda de maior valor.
+
+SELECT
+    p.nome AS nome_produto,
+    quantidade * preco_unitario AS valor_total_vendas
+FROM itens_venda AS iv
+INNER JOIN produtos AS p
+    ON iv.id_produto = p.id_produto
+GROUP BY p.nome
+ORDER BY valor_total_vendas DESC LIMIT 1;
+
+-- 07. Descubra qual foi a venda de menor valor.
+
+SELECT
+    p.nome AS nome_produto,
+    quantidade * preco_unitario AS valor_total_vendas
+FROM itens_venda AS iv
+INNER JOIN produtos AS p
+    ON iv.id_produto = p.id_produto
+GROUP BY p.nome
+ORDER BY valor_total_vendas ASC LIMIT 1;
+
+-- 08. Calcule a quantidade total de produtos vendidos.
+
+SELECT
+    SUM(quantidade) AS qtd_total
+FROM itens_venda;
+
+-- 09. Identifique quantas vendas foram realizadas
+-- por cada funcionário.
+
+SELECT
+    f.nome AS nome_funcionario,
+    COUNT(v.id_venda) AS total_vendas
+FROM funcionarios AS f
+LEFT JOIN vendas AS v
+    ON f.id_funcionario = v.id_funcionario
+GROUP BY f.nome;
+
+-- 10. Calcule o faturamento total por funcionário
+-- e organize do maior para o menor.
+
+SELECT
+    f.nome,
+    SUM(iv.quantidade * iv.preco_unitario) AS faturamento
+FROM funcionarios AS f
+LEFT JOIN vendas AS v
+    ON f.id_funcionario = v.id_funcionario
+LEFT JOIN itens_venda AS iv
+    ON v.id_venda = iv.id_venda
+GROUP BY f.nome
+ORDER BY faturamento DESC;
+
+-- 11. Descubra quais são os 10 produtos mais vendidos
+-- considerando a quantidade total comercializada.
+
+SELECT
+    p.id_produto,
+    p.nome,
+    SUM(iv.quantidade) AS total_vendas
+FROM produtos AS p
+LEFT JOIN itens_venda AS iv
+    ON p.id_produto = iv.id_produto
+GROUP BY p.nome
+ORDER BY total_vendas DESC
+LIMIT 10;
+
+-- 12. Identifique os 10 produtos que geraram
+-- maior receita para a empresa.
+
+SELECT
+    p.id_produto,
+    p.nome,
+    ROUND(SUM(iv.quantidade * iv.preco_unitario), 2) AS faturamento
+FROM produtos AS p
+LEFT JOIN itens_venda AS iv
+    ON p.id_produto = iv.id_produto
+GROUP BY p.nome
+ORDER BY faturamento DESC
+LIMIT 10;
+
+-- 13. Calcule o faturamento total de cada categoria.
+
+SELECT
+    c.nome AS nome_categoria,
+    SUM(iv.quantidade * iv.preco_unitario)
+FROM categorias AS c
+LEFT JOIN produtos AS p
+    ON c.id_categoria = p.id_categoria
+LEFT JOIN itens_venda AS iv
+    ON p.id_produto = iv.id_produto
+GROUP BY c.nome;
+
+
+-- 14. Descubra qual categoria possui a maior
+-- quantidade de produtos vendidos.
+
+SELECT
+    c.nome AS nome_categoria,
+    SUM(iv.quantidade) AS qtd_produtos
+FROM categorias AS c
+LEFT JOIN produtos AS p
+    ON c.id_categoria = p.id_categoria
+LEFT JOIN itens_venda AS iv
+    ON p.id_produto = iv.id_produto
+GROUP BY c.nome;
+
+-- 15. Calcule o preço médio dos produtos
+-- agrupados por categoria.
+
+SELECT
+    c.nome AS nome_categoria,
+    ROUND(AVG(p.preco_venda), 2) AS media_preco_venda
+FROM produtos AS p
+LEFT JOIN categorias AS c
+    ON p.id_categoria = c.id_categoria
+GROUP BY c.nome;
+
+-- 16. Identifique produtos que nunca foram vendidos.
+
+SELECT
+    p.nome,
+    COUNT(iv.id_produto) AS qtd_vendas
+FROM produtos AS p
+LEFT JOIN itens_venda AS iv
+    ON p.id_produto = iv.id_produto
+LEFT JOIN vendas AS v
+     ON iv.id_venda = v.id_venda
+GROUP BY p.nome
+HAVING qtd_vendas == 0;
+
+-- 17. Calcule a participação percentual de cada categoria
+-- no faturamento total da empresa.
+
+WITH faturamento_por_cat AS (
+    SELECT
+        c.nome AS categoria,
+        SUM(iv.quantidade * iv.preco_unitario) AS faturamento_categoria
+    FROM categorias c
+    JOIN produtos p
+        ON c.id_categoria = p.id_categoria
+    JOIN itens_venda iv
+        ON p.id_produto = iv.id_produto
+    JOIN vendas v
+        ON iv.id_venda = v.id_venda
+    WHERE v.status = 'Concluida'
+    GROUP BY c.nome
+)
+
+SELECT categoria, faturamento_categoria,
+    CONCAT(ROUND(faturamento_categoria * 100 / SUM(faturamento_categoria) OVER(), 2), '%')  AS percentual_categoria
+FROM faturamento_por_cat
+GROUP BY categoria;
+
+-- 18. Identifique os produtos com maior receita,
+-- mas com menor quantidade de vendas.
+
+WITH faturamento AS (
+    SELECT 
+        p.nome AS produto,
+        ROUND(SUM(iv.quantidade * iv.preco_unitario), 2) AS faturamento_produto,
+        SUM(iv.quantidade) AS total_vendido_produto
+    FROM itens_venda AS iv
+    INNER JOIN produtos AS p
+        ON iv.id_produto = p.id_produto
+    GROUP BY p.nome
+)
+
+SELECT produto, faturamento_produto, total_vendido_produto
+FROM faturamento
+WHERE total_vendido_produto == 60
+ORDER BY faturamento_produto DESC;
+
+-- 19. Calcule a quantidade de vendas por produto
+-- e classifique os produtos do mais vendido ao menos vendido.
+
+SELECT                      -- 96 é a média da quantidade total vendida
+    p.nome AS produto,
+    SUM(iv.quantidade) AS total_vendido_produto,
+    CASE
+        WHEN SUM(iv.quantidade) < 96 THEN 'Menos vendido'
+        ELSE 'Mais vendido'
+    END AS classificacao
+FROM itens_venda AS iv
+INNER JOIN produtos AS p
+    ON iv.id_produto = p.id_produto
+GROUP BY p.nome
+ORDER BY total_vendido_produto ASC;
+
+-- 20. Descubra quais categorias possuem faturamento
+-- acima da média de faturamento entre as categorias.
+
+
+WITH faturamento AS (
+    SELECT
+        c.nome AS categoria,
+        SUM(iv.quantidade * iv.preco_unitario) AS faturamento_categoria
+    FROM categorias c
+    JOIN produtos p
+        ON c.id_categoria = p.id_categoria
+    JOIN itens_venda iv
+        ON p.id_produto = iv.id_produto
+    JOIN vendas v
+        ON iv.id_venda = v.id_venda
+    WHERE v.status = 'Concluida'
+    GROUP BY c.nome
+),
+
+media_faturamento AS (
+    SELECT
+        categoria,
+        faturamento_categoria,
+        AVG(faturamento_categoria) OVER() AS media
+    FROM faturamento
+)
+
+SELECT
+    categoria,
+    faturamento_categoria
+FROM media_faturamento
+WHERE faturamento_categoria > media;
