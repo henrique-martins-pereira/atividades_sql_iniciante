@@ -49,8 +49,6 @@ O banco contém sete tabelas principais:
 git clone https://github.com/henrique-martins-pereira/atividades_sql_iniciante
 ```
 
-Troque `SEU-USUARIO` pelo seu usuário do GitHub depois de publicar o repositório.
-
 ## 📚 Conteúdos praticados
 
 - `SELECT`, `WHERE`, `ORDER BY` e `LIMIT`;
