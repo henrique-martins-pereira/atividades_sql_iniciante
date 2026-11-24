@@ -46,7 +46,7 @@ O banco contém sete tabelas principais:
 ### Clonar o repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/SQL-Portfolio-Samsung.git
+git clone https://github.com/henrique-martins-pereira/atividades_sql_iniciante
 ```
 
 Troque `SEU-USUARIO` pelo seu usuário do GitHub depois de publicar o repositório.
