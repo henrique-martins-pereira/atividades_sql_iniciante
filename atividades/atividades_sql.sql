@@ -1,7 +1,7 @@
 
 /*
 ========================================================
-       SAMSUNG COMMERCE — 50 ATIVIDADES SQL
+       SAMSUNG COMMERCE — 20 ATIVIDADES SQL
               NÍVEL INTERMEDIÁRIO
 ========================================================
 
